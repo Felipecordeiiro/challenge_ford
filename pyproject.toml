@@ -1,0 +1,19 @@
+[project]
+name = "ford-desafio-nlp"
+version = "0.1.0"
+description = "This project was created with much love and patiente"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "ipykernel>=6.29.5",
+    "numpy>=2.2.2",
+    "pandas>=2.2.3",
+    "polars>=1.21.0",
+    "python-dotenv>=1.0.1",
+    "requests>=2.32.3",
+    "scikit-learn>=1.6.1",
+    "scipy>=1.15.1",
+    "torch>=2.6.0",
+    "transformers>=4.48.2",
+    "uv>=0.5.26",
+]
