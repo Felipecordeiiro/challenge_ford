@@ -1,12 +1,12 @@
 from dotenv import load_dotenv
-from scipy import stats
+from nltk.corpus import  stopwords
 import polars as pl
-import numpy as np
-import re
 import os
 
+load_dotenv()
+
 # PATH DATA
-CLEANED_DATA_PATH = os.getenv('CLEANED_DATA')
+CLEANED_DATA_PATH=os.getenv('CLEANED_DATA')
 
 def dowloand_cleaned_data(response:dict, year:int) -> pl.DataFrame:
     
@@ -23,38 +23,32 @@ def dowloand_cleaned_data(response:dict, year:int) -> pl.DataFrame:
 def data_to_datetime(data:pl.DataFrame) -> pl.DataFrame:
     # Converter colunas de data para datetime
     data = data.with_columns([
-        pl.col('dateOfIncident').str.strptime(pl.Datetime, fmt='%Y-%m-%d', strict=False).alias('dateOfIncident'),
-        pl.col('dateComplaintFiled').str.strptime(pl.Datetime, fmt='%Y-%m-%d', strict=False).alias('dateComplaintFiled')
+        pl.col('dateOfIncident').str.strptime(pl.Datetime, format='%Y-%m-%d', strict=False).alias('dateOfIncident'),
+        pl.col('dateComplaintFiled').str.strptime(pl.Datetime, format='%Y-%m-%d', strict=False).alias('dateComplaintFiled')
     ])
     return data
 
-
-def remove_stop_words(data:pl.DataFrame) -> pl.DataFrame:
+def remove_ponctuation_special_chars(data:pl.DataFrame) -> pl.DataFrame:
     punctuation_pattern = r'[^\w\s]'
-    text_cleaned = re.sub(punctuation_pattern, '', data)
-    
-    return data
-
-def remove_duplicates(data:pl.DataFrame) -> pl.DataFrame:
-    data = data.drop_duplicates()
+    data = data.with_columns(
+        pl.col("summary").str.replace_all(punctuation_pattern, "").alias("summary")
+    )
     return data
 
 def remove_blank_spaces_and_convert_to_lower(data:pl.DataFrame) -> pl.DataFrame:
     text_columns = ['manufacturer', 'components', 'summary', 'type', 'productMake', 'productModel']
-    data[text_columns] = data[text_columns].apply(lambda x: x.str.lower().str.strip())
+    # Aplicar lower() e strip() nas colunas de texto
+    data = data.with_columns([
+        pl.col(col).str.strip_chars().str.to_lowercase().alias(col) for col in text_columns
+    ])
     return data
-
-def remove_stop_words(data:pl.DataFrame) -> pl.DataFrame:
-    # odiNumber,manufacturer,crash,fire,numberOfInjuries,numberOfDeaths,dateOfIncident,dateComplaintFiled,vin,components,summary,type,productYear,productMake,productModel
-    print(data)
 
 def clean_data(all_data:list[pl.DataFrame]) -> list[pl.DataFrame]:
     data_cleaned = []
     for data in all_data:
         data = data_to_datetime(data)
-        data = remove_duplicates(data)
         data = remove_blank_spaces_and_convert_to_lower(data)
-        data = remove_stop_words(data)
+        data = remove_ponctuation_special_chars(data)
 
         data_cleaned.append(data)
     

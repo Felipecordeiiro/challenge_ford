@@ -29,7 +29,7 @@ def dowloand_raw_data(response:dict|list[dict], year:int) -> pl.DataFrame:
     data_merged.write_csv(os.path.join(RAW_DATA_PATH, str(year)+".csv"))
     print(f"Dataset original salvo em {RAW_DATA_PATH}")
 
-    return data_response
+    return data_merged
 
 def getting_data(y_inicio:int, y_fim:Optional[int]) -> pl.DataFrame:
     if not y_fim:
@@ -62,4 +62,4 @@ def getting_data(y_inicio:int, y_fim:Optional[int]) -> pl.DataFrame:
                 data = dowloand_raw_data(response_results, data)
                 all_data.append(data)
                 
-        return data
+        return all_data

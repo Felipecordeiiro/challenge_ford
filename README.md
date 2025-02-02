@@ -2,6 +2,20 @@ A pipeline da solução pode ser exemplificada através da seguinte imagem:
 
 ![alt text](diagrama.png "Data and Models Pipeline")
 
+### Quick Setup
+Nos usamos o gerenciador de pacotes uv, então antes de mais nada, é interessante que você tenha instalado esse gerenciador (a escolha do mesmo é baseado na sua performance superando opções comuns, como: conda ou poetry), rode o comando:
+
+```pip install uv```
+
+Em seguida você pode estar criando um novo ambiente usando o comando:
+
+```uv venv --python 3.11.10```
+
+E, por fim, configurando todo o projeto a partir de um único comando:
+
+``` uv sync ```
+
+Dentre todas as 5 etapas obrigatórias do desafio, consegui finalizar as seguintes:
 ### Etapas obrigatórias concluidas:
 1. **[ X ] Aquisição e Pré-processamento de Dados**: Automatizar o download dos dados da NHTSA. Realizar o pré-processamento necessário, incluindo limpeza de texto (remoção de caracteres especiais, tratamento de stop words, stemming ou lematização), e transformação em um formato adequado para o treinamento do modelo. Documentar todas as etapas e justificar as escolhas realizadas.
 

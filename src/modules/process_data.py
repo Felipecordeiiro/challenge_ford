@@ -2,15 +2,16 @@ from dotenv import load_dotenv
 from sklearn.preprocessing import LabelEncoder
 from transformers import BertTokenizer, BertModel
 import torch
-import numpy as np
 import polars as pl
-import re
 import os
 
+load_dotenv()
+
 # Carregar o tokenizer e modelo BERT
+API_TOKEN_HUGGING_FACE=os.getenv('API_TOKEN_HUGGING_FACE')
 MODEL_NAME = "bert-base-uncased"
-tokenizer = BertTokenizer.from_pretrained(MODEL_NAME)
-bert_model = BertModel.from_pretrained(MODEL_NAME)
+tokenizer = BertTokenizer.from_pretrained(MODEL_NAME, token=API_TOKEN_HUGGING_FACE)
+bert_model = BertModel.from_pretrained(MODEL_NAME, token=API_TOKEN_HUGGING_FACE)
 
 # PATH DATA
 PROCESSED_DATA_PATH = os.getenv('PROCESSED_DATA')
@@ -23,12 +24,18 @@ def get_bert_embedding(text):
     return outputs.last_hidden_state[:, 0, :].squeeze().numpy()
 
 def generate_embeddings(data:pl.DataFrame) -> pl.DataFrame:
-    # Aplicar embeddings no dataset
-    data['embeddings'] = data['summary'].apply(get_bert_embedding)
-
+    # Aplicar embeddings no dataset (convertendo para lista antes)
+    embeddings = [get_bert_embedding(text) for text in data["summary"].to_list()]
+    
     # Transformar rótulos em valores numéricos
     severity_mapping = {"leve": 0, "moderado": 1, "grave": 2}
-    data['severity_label'] = data['severity'].map(severity_mapping)
+    
+    data = data.with_columns([
+        pl.Series("embeddings", embeddings),  # Adiciona os embeddings
+        pl.col("severity").map_dict(severity_mapping).alias("severity_label")  # Mapeia os rótulos de severidade
+    ])
+
+    return data
 
 def dowloand_processed_data(response:dict, year:int) -> pl.DataFrame:    
     data_response = pl.DataFrame(response)
@@ -60,16 +67,31 @@ def create_severity_feature(data:pl.DataFrame) -> pl.DataFrame:
     """
     Função responsável por criar uma nova feature que armazena informações de severidade, uma target, para um problema de regressão.
     """
-    data['severity'] = data.apply(lambda row: classify_severity_feature(row['numberOfInjuries'], row['numberOfDeaths']), axis=1)
+    severity_values = [
+        classify_severity_feature(injuries, deaths)
+        for injuries, deaths in zip(data["numberOfInjuries"].to_list(), data["numberOfDeaths"].to_list())
+    ]
+    
+    data = data.with_columns(
+        pl.Series("severity", severity_values)
+    )
+    
     return data
 
 def encode_features(data: pl.DataFrame) -> pl.DataFrame:
-    data['crash'] = data['crash'].astype(int)
-    data['fire'] = data['fire'].astype(int)
-
-    # Codificar a coluna 'components'
+    data = data.with_columns([
+        pl.col('crash').cast(pl.Int32),
+        pl.col('fire').cast(pl.Int32)
+    ])
+    
+    # Codificar a coluna 'components' usando LabelEncoder
     label_encoder = LabelEncoder()
-    data['components_encoded'] = label_encoder.fit_transform(data['components'])
+    encoded_components = label_encoder.fit_transform(data['components'].to_list())
+
+    # Adicionar a nova coluna ao DataFrame Polars
+    data = data.with_columns(
+        pl.Series('components_encoded', encoded_components)
+    )
 
     return data
 
